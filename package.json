@@ -15,7 +15,7 @@
 		"build:dev": "vue-cli-service build --mode development",
 		"build:prod": "vue-cli-service build --mode production",
 		"lint": "vue-cli-service lint",
-		"deploy": "npm run build:prod && cd dist && git init && git add . && git commit -m 'Deploy' && git push -f https://github.com/italofds/cybercrime-chart.git main:gh-pages"
+		"deploy": "npm run build:prod && cd dist && git init && git add . && git commit -m 'Deploy' && git push -f https://github.com/italofds/cybercrime-chart.git HEAD:gh-pages"
 	},
 	"repository": {
 		"type": "git",
