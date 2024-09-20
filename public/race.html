@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Exemplo Básico</title>
     <style>
-        @import url("https://raw.githubusercontent.com/italofds/cybercrime-chart/refs/heads/main/public/data/ESTATISTICAS_CUMULATIVAS.json");
+        @import url("https://netdna.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css");
 
 		.highcharts-figure {
 			margin: 0;
@@ -18,7 +18,7 @@
 		}
 
 		#container {
-			height: 900px;
+			height: 1500px;
 			max-width: 1000px;
 			margin: 0 auto;
 		}
@@ -55,18 +55,15 @@
     <div id="parent-container">
 		<div id="play-controls">
 			<button id="play-pause-button" class="fa fa-play" title="play"></button>
-			<input id="play-range" type="range" value="1960" min="1960" max="2022" />
+			<input id="play-range" type="range" value="2014" min="2014" max="2023" />
 		</div>
 		<div id="container"></div>
 	</div>
-    <p class="highcharts-description">
-        Bar chart showing the world population by countries from 1960 to 2022.
-    </p>
 </figure>
 
 <script>
-const startYear = 1960,
-    endYear = 2022,
+const startYear = 2014,
+    endYear = 2023,
     btn = document.getElementById('play-pause-button'),
     input = document.getElementById('play-range'),
     nbr = 50;
@@ -155,27 +152,27 @@ let dataset, chart;
 
 function getData(year) {
     const output = Object.entries(dataset)
-        .map(country => {
+        .map((country, index) => {
             const [countryName, countryData] = country;
             return [countryName, Number(countryData[year])];
         })
         .sort((a, b) => b[1] - a[1]);
-    return [output[0], output.slice(1, nbr)];
+    return [output[0], output.slice(0, nbr)];
 }
 
 function getSubtitle() {
-    const population = (getData(input.value)[0][1] / 1000000000).toFixed(2);
+    const total = getData(input.value)[0][1];
     return `<span style="font-size: 80px">${input.value}</span>
         <br>
         <span style="font-size: 22px">
-            Total: <b>: ${population}</b> billion
+            Total: <b>: ${total}</b> registros
         </span>`;
 }
 
 (async () => {
 
     dataset = await fetch(
-        'https://demo-live-data.highcharts.com/population.json'
+        'https://raw.githubusercontent.com/italofds/cybercrime-chart/refs/heads/main/public/data/ESTATISTICAS_CUMULATIVAS.json'
     ).then(response => response.json());
 
 
@@ -187,7 +184,7 @@ function getSubtitle() {
             marginRight: 50
         },
         title: {
-            text: 'World population by country',
+            text: 'Soma da quantidade de registros de ocorrências por natureza.',
             align: 'left'
         },
         subtitle: {
@@ -320,7 +317,7 @@ function play(button) {
     button.className = 'fa fa-pause';
     chart.sequenceTimer = setInterval(function () {
         update(1);
-    }, 500);
+    }, 3000);
 }
 
 btn.addEventListener('click', function () {
