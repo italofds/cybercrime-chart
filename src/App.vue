@@ -29,7 +29,7 @@
 
 import Chart from "chart.js/auto"
 
-const FIRST_YEAR = 2013;
+const FIRST_YEAR = 2014;
 const LAST_YEAR = 2023;
 
 const naturezasExcluidas = [
@@ -140,7 +140,7 @@ export default {
 					scales: {
 						x: {
 							position: 'top',
-							max: 100000
+							max: 50000
 						}
 					},
 					plugins: {
@@ -178,7 +178,7 @@ async function loadJSON(year) {
 async function aggregateData() {
 	const occurrencesByYear = {};
 	
-	for (let year = 2013; year <= 2023; year++) {
+	for (let year = FIRST_YEAR; year <= LAST_YEAR; year++) {
 		const data = await loadJSON(year);
 		data[0].forEach(ocorrencia => {
 			const descricao = ocorrencia.DSC_NAT_OCORRENCIA;
