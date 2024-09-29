@@ -170,10 +170,16 @@ function getData(dateStep) {
             const [crimeName, crimeData] = crime;
             let count = 0;
             if(year == startYear) {
-                count = Math.floor(Number(crimeData[year] * (step + 0.1)));
+                if (crimeData[year]) {
+                    count = Math.floor(Number(crimeData[year] * (step + 0.1)));
+                }
+                
             } else {
-                count = Math.floor(Number(crimeData[year-1]) + ((Number(crimeData[year]) - Number(crimeData[year-1])) * (step + 0.1)));
+                if (crimeData[year] && crimeData[year-1]) {
+                    count = Math.floor(Number(crimeData[year-1]) + ((Number(crimeData[year]) - Number(crimeData[year-1])) * (step + 0.1)));
+                }               
             }
+
             if (naturezasExcluidas.includes(crimeName)) {
 				return;
 			} else {
@@ -189,7 +195,6 @@ function getSubtitle() {
     var dataList = getData(input.value)[1];
     for(var data of dataList) {
         var count = parseInt(data[1]);
-        console.log(data);
         total += count;
     }
     
