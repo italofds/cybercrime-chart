@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Exemplo Básico</title>
+    <style>
+        @import url("https://netdna.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css");
+
+		.highcharts-figure {
+			margin: 0;
+		}
+
+		#play-controls {
+			max-width: 1000px;
+			margin: 1em auto;
+		}
+
+		#container {
+			height: 1500px;
+			max-width: 1000px;
+			margin: 0 auto;
+		}
+
+		#play-pause-button {
+			margin-left: 10px;
+			width: 50px;
+			height: 50px;
+			cursor: pointer;
+			border: 1px solid rgba(2, 117, 255, 1);
+			border-radius: 25px;
+			color: white;
+			background-color: rgba(2, 117, 255, 1);
+			transition: background-color 250ms;
+		}
+
+		#play-pause-button:hover {
+			background-color: rgba(2, 117, 255, 0.5);
+		}
+
+		#play-range {
+			transform: translateY(2.5px);
+			width: calc(100% - 90px);
+			background: #f8f8f8;
+		}
+
+    </style>
+</head>
+<body>
+
+<script src="https://code.highcharts.com/highcharts.js"></script>
+
+<figure class="highcharts-figure">
+    <div id="parent-container">
+		<div id="play-controls">
+			<button id="play-pause-button" class="fa fa-play" title="play"></button>
+			<input id="play-range" step="0.1" type="range" value="2014" min="2014" max="2024" />
+		</div>
+		<div id="container"></div>
+	</div>
+</figure>
+
+<script>
+
+const naturezasExcluidas = [
+"EM APURACAO",
+"TRÂNSITO - ACIDENTE DE TRANSITO SEM VITIMA",
+"EXTRAVIO",
+"CUMPRIMENTO DE MANDADO DE PRISÃO - Criminal",
+"ACIDENTE DE TRANSITO SEM VITIMA",
+"TRÂNSITO - COLISÃO TRASEIRA",
+"TRÂNSITO - OUTROS"
+];
+
+const startYear = 2014,
+    endYear = 2023,
+    btn = document.getElementById('play-pause-button'),
+    input = document.getElementById('play-range'),
+    nbr = 50;
+
+let dataset, chart;
+
+
+/*
+ * Animate dataLabels functionality
+ */
+(function (H) {
+    const FLOAT = /^-?\d+\.?\d*$/;
+
+    // Add animated textSetter, just like fill/strokeSetters
+    H.Fx.prototype.textSetter = function () {
+        let startValue = this.start.replace(/ /g, ''),
+            endValue = this.end.replace(/ /g, ''),
+            currentValue = this.end.replace(/ /g, '');
+
+        if ((startValue || '').match(FLOAT)) {
+            startValue = parseInt(startValue, 10);
+            endValue = parseInt(endValue, 10);
+
+            // No support for float
+            currentValue = Highcharts.numberFormat(
+                Math.round(startValue + (endValue - startValue) * this.pos),
+                0
+            );
+        }
+
+        this.elem.endText = this.end;
+
+        this.elem.attr(this.prop, currentValue, null, true);
+    };
+
+    // Add textGetter, not supported at all at this moment:
+    H.SVGElement.prototype.textGetter = function () {
+        const ct = this.text.element.textContent || '';
+        return this.endText ? this.endText : ct.substring(0, ct.length / 2);
+    };
+
+    // Temporary change label.attr() with label.animate():
+    // In core it's simple change attr(...) => animate(...) for text prop
+    H.wrap(H.Series.prototype, 'drawDataLabels', function (proceed) {
+        const attr = H.SVGElement.prototype.attr,
+            chart = this.chart;
+
+        if (chart.sequenceTimer) {
+            this.points.forEach(point =>
+                (point.dataLabels || []).forEach(
+                    label =>
+                        (label.attr = function (hash) {
+                            if (
+                                hash &&
+                                hash.text !== undefined &&
+                                chart.isResizing === 0
+                            ) {
+                                const text = hash.text;
+
+                                delete hash.text;
+
+                                return this
+                                    .attr(hash)
+                                    .animate({ text });
+                            }
+                            return attr.apply(this, arguments);
+
+                        })
+                )
+            );
+        }
+
+        const ret = proceed.apply(
+            this,
+            Array.prototype.slice.call(arguments, 1)
+        );
+
+        this.points.forEach(p =>
+            (p.dataLabels || []).forEach(d => (d.attr = attr))
+        );
+
+        return ret;
+    });
+}(Highcharts));
+
+
+function getData(dateStep) {
+    var year = Math.floor(dateStep);
+    var step = parseFloat(dateStep) - parseFloat(year);
+
+    const output = Object.entries(dataset)
+        .map((crime, index) => {
+            const [crimeName, crimeData] = crime;
+            let count = 0;
+            if(year == startYear) {
+                if (crimeData[year]) {
+                    count = Math.floor(Number(crimeData[year] * (step + 0.1)));
+                }
+                
+            } else {
+                if (crimeData[year] && crimeData[year-1]) {
+                    count = Math.floor(Number(crimeData[year-1]) + ((Number(crimeData[year]) - Number(crimeData[year-1])) * (step + 0.1)));
+                }               
+            }
+
+            if (naturezasExcluidas.includes(crimeName)) {
+				return;
+			} else {
+                return [crimeName, count];
+            }            
+        })
+        .sort((a, b) => b[1] - a[1]);
+    return [output[0], output.slice(0, nbr)];
+}
+
+function getSubtitle() {
+    var total = 0;
+    var dataList = getData(input.value)[1];
+    for(var data of dataList) {
+        var count = parseInt(data[1]);
+        total += count;
+    }
+    
+
+    return `<span style="font-size: 80px">${Math.floor(input.value)}</span>
+        <br>
+        <span style="font-size: 22px">
+            Total: <b>: ${total}</b> registros
+        </span>`;
+}
+
+(async () => {
+
+    dataset = await fetch(
+        'https://raw.githubusercontent.com/italofds/cybercrime-chart/refs/heads/main/public/data/ESTATISTICAS_CUMULATIVAS.json'
+    ).then(response => response.json());
+
+
+    chart = Highcharts.chart('container', {
+        chart: {
+            animation: {
+                duration: 500
+            },
+            marginRight: 50
+        },
+        title: {
+            text: 'Soma da quantidade de registros de ocorrências por natureza.',
+            align: 'left'
+        },
+        subtitle: {
+            useHTML: true,
+            text: getSubtitle(),
+            floating: true,
+            align: 'right',
+            verticalAlign: 'middle',
+            y: -80,
+            x: -100
+        },
+
+        legend: {
+            enabled: false
+        },
+        xAxis: {
+            type: 'category'
+        },
+        yAxis: {
+            opposite: true,
+            tickPixelInterval: 150,
+            title: {
+                text: null
+            }
+        },
+        plotOptions: {
+            series: {
+                animation: false,
+                groupPadding: 0,
+                pointPadding: 0.1,
+                borderWidth: 0,
+                colorByPoint: true,
+                dataSorting: {
+                    enabled: true,
+                    matchByName: true
+                },
+                type: 'bar',
+                dataLabels: {
+                    enabled: true
+                }
+            }
+        },
+        series: [
+            {
+                type: 'bar',
+                name: startYear,
+                data: getData(startYear)[1]
+            }
+        ],
+        responsive: {
+            rules: [{
+                condition: {
+                    maxWidth: 550
+                },
+                chartOptions: {
+                    xAxis: {
+                        visible: false
+                    },
+                    subtitle: {
+                        x: 0
+                    },
+                    plotOptions: {
+                        series: {
+                            dataLabels: [{
+                                enabled: true,
+                                y: 8
+                            }, {
+                                enabled: true,
+                                format: '{point.name}',
+                                y: -8,
+                                style: {
+                                    fontWeight: 'normal',
+                                    opacity: 0.7
+                                }
+                            }]
+                        }
+                    }
+                }
+            }]
+        }
+    });
+})();
+
+/*
+ * Pause the timeline, either when the range is ended, or when clicking the
+ * pause button. Pausing stops the timer and resets the button to play mode.
+ */
+function pause(button) {
+    button.title = 'play';
+    button.className = 'fa fa-play';
+    clearTimeout(chart.sequenceTimer);
+    chart.sequenceTimer = undefined;
+}
+
+/*
+ * Update the chart. This happens either on updating (moving) the range input,
+ * or from a timer when the timeline is playing.
+ */
+function update(increment) {
+    if (increment) {
+        input.value = parseFloat(input.value) + parseFloat(increment);
+
+    }
+    if (input.value >= endYear+1) {
+        pause(btn);
+
+    } else {
+        chart.update(
+            {
+                subtitle: {
+                    text: getSubtitle()
+                }
+            },
+            false,
+            false,
+            false
+        );
+
+        chart.series[0].update({
+            name: input.value,
+            data: getData(input.value)[1]
+        });
+    }    
+}
+
+/*
+ * Play the timeline.
+ */
+function play(button) {
+    button.title = 'pause';
+    button.className = 'fa fa-pause';
+    chart.sequenceTimer = setInterval(function () {
+        update(0.1);
+    }, 500);
+}
+
+btn.addEventListener('click', function () {
+    if (chart.sequenceTimer) {
+        pause(this);
+    } else {
+        play(this);
+    }
+});
+/*
+ * Trigger the update on the range bar click.
+ */
+input.addEventListener('click', function () {
+    update();
+});
+</script>
+</body>
+</html>
