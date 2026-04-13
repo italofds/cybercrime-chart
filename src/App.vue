@@ -30,7 +30,7 @@
 import Chart from "chart.js/auto"
 
 const FIRST_YEAR = 2014;
-const LAST_YEAR = 2023;
+const LAST_YEAR = 2025;
 
 const naturezasExcluidas = [
 "EM APURACAO",
@@ -46,7 +46,8 @@ const naturezasDestaque = [
 "INVASÃO DE DISPOSITIVO INFORMÁTICO (L.12737/12) ",
 "CRIMES PRATICADOS PELA INTERNET",
 "FALSA IDENTIDADE",
-"POSSIVEL TENTATIVA DE ESTELIONATO"
+"POSSIVEL TENTATIVA DE ESTELIONATO",
+"EXTORSAO"
 ];
 
 export default {
@@ -140,7 +141,7 @@ export default {
 					scales: {
 						x: {
 							position: 'top',
-							max: 50000
+							max: 70000
 						}
 					},
 					plugins: {
@@ -180,7 +181,7 @@ async function aggregateData() {
 	
 	for (let year = FIRST_YEAR; year <= LAST_YEAR; year++) {
 		const data = await loadJSON(year);
-		data[0].forEach(ocorrencia => {
+		data.forEach(ocorrencia => {
 			const descricao = ocorrencia.DSC_NAT_OCORRENCIA;
 			const registros = ocorrencia.QTD_REGISTROS;
 			
