@@ -1,44 +1,39 @@
-// Modified script to process JSON files from GitHub and generate a concatenated JSON with cumulative sums
-
 const fs = require('fs');
+const path = require('path'); // Importante para lidar com caminhos
 
 (async () => {
-  // Define the years to process
   const years = [];
-  for (let year = 2014; year <= 2023; year++) {
+  for (let year = 2014; year <= 2025; year++) {
     years.push(year);
   }
 
-  // Replace the placeholders with your GitHub repository details
-  const baseUrl = 'https://raw.githubusercontent.com/italofds/cybercrime-chart/refs/heads/main/public/data';
+  // Use caminhos relativos. O '.' indica a pasta onde o script está.
+  // Se a pasta 'public' estiver no mesmo nível de temp.js:
+  const baseDir = path.join(__dirname, 'public', 'data');
 
-  // Data structure to accumulate the results
   const result = {};
-
-  // For cumulative sums, we need to keep track of cumulative totals per nature
   const cumulativeSums = {};
 
   for (const year of years) {
     const fileName = `ESTATISTICAS_NATUREZAS_${year}.json`;
-    const fileUrl = `${baseUrl}/${fileName}`;
+    const filePath = path.join(baseDir, fileName);
 
-    console.log(`Fetching data for year ${year} from ${fileUrl}`);
+    console.log(`Lendo dados do ano ${year} em: ${filePath}`);
 
     try {
-      const response = await fetch(fileUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ${fileUrl}: ${response.statusText}`);
+      // Substituímos o fetch por fs.readFileSync ou fs.promises.readFile
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`Arquivo não encontrado: ${fileName}`);
       }
 
-      const data = await response.json();
+      const fileContent = fs.readFileSync(filePath, 'utf8');
+      const data = JSON.parse(fileContent);
 
-      // Handle data wrapped in double arrays [[...]]
       let records = data;
       if (Array.isArray(data) && data.length === 1 && Array.isArray(data[0])) {
         records = data[0];
       }
 
-      // Process each record
       for (const item of records) {
         const nature = item['DSC_NAT_OCORRENCIA'];
         const qty = parseInt(item['QTD_REGISTROS']);
@@ -48,19 +43,15 @@ const fs = require('fs');
           cumulativeSums[nature] = 0;
         }
 
-        // Update cumulative sum
         cumulativeSums[nature] += qty;
-
-        // Store the cumulative quantity as a string
         result[nature][year] = cumulativeSums[nature].toString();
       }
     } catch (error) {
-      console.error(`Error processing data for year ${year}:`, error);
+      console.error(`Erro ao processar ano ${year}:`, error.message);
     }
   }
 
-  // Write the result to a JSON file
   const outputFileName = 'concatenated_cumulative_data.json';
   fs.writeFileSync(outputFileName, JSON.stringify(result, null, 2), 'utf8');
-  console.log(`Concatenated cumulative data written to ${outputFileName}`);
+  console.log(`Sucesso! Resultado em: ${outputFileName}`);
 })();
